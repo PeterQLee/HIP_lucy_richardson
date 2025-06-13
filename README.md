@@ -13,7 +13,7 @@ In theory this should be compatible for both NVIDIA and AMD Gpus, but has only b
 
 # Building
 ```bash
-clone https://github.com/PeterQLee/HIP_lucy_richardson
+git clone https://github.com/PeterQLee/HIP_lucy_richardson
 cd HIP_lucy_richardson
 mkdir build
 cd build
@@ -24,7 +24,7 @@ make
 # Usage:
 
 ## C++ interface
-Link to lucy_richardson_deconv. Example usage is shown in test.cc
+Link to lucy_richardson_deconv. Example usage is shown in tests/test.cc
 
 ```c++
 typedef struct {

@@ -78,7 +78,6 @@ void run_LR_deconv(py::array_t<float, py::array::c_style> image,
     denom_filter = py::cast<float>(filter_epsilon);
     
   }
-  printf("%d %f\n", flag_denom_filter, denom_filter);
   lucy_richardson(&imdata, num_iter, eps, clip, flag_denom_filter, denom_filter, channelbatch);
 
   free(imdata.flipPsfData);
@@ -111,11 +110,8 @@ channelbatch: number of channels to concurrently process.
 ---------------
 The result of the deconvolution is returned by overwriting the data in image.
 
-)pbdoc", py::arg("image"), py::arg("psf"), py::arg("num_iter"), py::arg("clip"), py::arg("filter_epsilon"), py::arg("channelbatch"));
+)pbdoc", py::arg("image"), py::arg("psf"), py::arg("num_iter"), py::arg("clip") = true, py::arg("filter_epsilon") = py::none(), py::arg("channelbatch")=1);
 
-#ifdef VERSION_INFO
-    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
-#else
-    m.attr("__version__") = "dev";
-#endif
+    m.attr("__version__") = "0.1";
+
 }

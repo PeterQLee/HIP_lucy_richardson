@@ -58,11 +58,11 @@ endif()
 
 
 list(APPEND CMAKE_PREFIX_PATH "${ROCM_ROOT}")
-
+list(APPEND include_dirs "include/")
 
 
 find_package(hip REQUIRED)
-add_library(${libname} SHARED deconv.hip gpuOps.hip)
+add_library(${libname} SHARED src/deconv.hip src/gpuOps.hip)
 
 # Make example runnable using ctest
 
@@ -70,18 +70,19 @@ target_link_libraries(${libname} PRIVATE hip::device)
 target_include_directories(${libname} PRIVATE ${include_dirs})
 
 
-add_executable(test test.cc)
+add_executable(test tests/test.cc)
 target_link_libraries(test PRIVATE ${libname})
 target_include_directories(test PRIVATE ${include_dirs})
 
 # Copy test files
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/rgbimg.bin DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/rgbrestored.bin DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/impulse.bin DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/rgbimg.bin DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/rgbrestored.bin DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/impulse.bin DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
 
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
-pybind11_add_module(LR_GPU_wrapper wrapper_py.cc)
+pybind11_add_module(LR_GPU_wrapper src/wrapper_py.cc)
 target_link_libraries(LR_GPU_wrapper PRIVATE ${libname})
+target_include_directories(LR_GPU_wrapper PRIVATE ${include_dirs})
 
 install(TARGETS ${example_name})

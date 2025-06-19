@@ -28,6 +28,7 @@ void lucy_richardson(ImageData *imData, int num_iter, f32 epsilon , bool clip, b
   before = clock();
   #endif
 
+
   f32 *slice;
 
   for (int c=0;c<channels;c+= channelbatch){
@@ -41,8 +42,9 @@ void lucy_richardson(ImageData *imData, int num_iter, f32 epsilon , bool clip, b
     
     for (int i=0;i<num_iter; i++) {
 
-      callConvolution(gdata.g_im_deconv, gdata.g_psf, gdata.g_relBlur, cb, height, width, filt_height, filt_width, epsilon);
+      callConvolution(gdata.g_im_deconv, gdata.g_flip_psf, gdata.g_relBlur, cb, height, width, filt_height, filt_width, epsilon); // Forgot to flip psf in convolution, technically callConvolution does correlation.
 
+     
       if (flag_denom_filter) {
 	callFiltDivision(slice, gdata.g_relBlur, denom_filter, cb*width*height);
       }
@@ -52,16 +54,17 @@ void lucy_richardson(ImageData *imData, int num_iter, f32 epsilon , bool clip, b
 
       if (i < num_iter - 1) {
 
-	callConvolution(gdata.g_relBlur, gdata.g_flip_psf, gdata.g_tmp, cb, height, width, filt_height, filt_width, 0.0f);
+	callConvolution(gdata.g_relBlur, gdata.g_psf, gdata.g_tmp, cb, height, width, filt_height, filt_width, 0.0f);
       
 	callMult(gdata.g_tmp, gdata.g_im_deconv, cb*width*height);
       }
       else {
 	// Last  iteration, use image as final buffer
 
-	callConvolution(gdata.g_relBlur, gdata.g_flip_psf, slice, cb, height, width, filt_height, filt_width, 0.0f);
+	callConvolution(gdata.g_relBlur, gdata.g_psf, slice, cb, height, width, filt_height, filt_width, 0.0f);
 	callMult(gdata.g_im_deconv, slice, cb*width*height);
       }
+   
     }
 
     if (clip) {

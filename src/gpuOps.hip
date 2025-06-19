@@ -13,12 +13,12 @@
 }
 
 // Adapted from https://github.com/ROCm/HIP-Examples/blob/master/HIP-Examples-Applications/SimpleConvolution/SimpleConvolution.cpp
-extern __shared__ f32 buf[];
+//extern __shared__ f32 buf[];
 __global__ void Convolution(f32 *input,
 			    f32 *psf, f32 *output,
 			    uint3 inputDimensions, uint2 maskDimensions,
 			    uint imWidth, f32 epsilon) {
-  
+  HIP_DYNAMIC_SHARED(f32, buf);
    uint tid = hipBlockDim_x*hipBlockIdx_x + hipThreadIdx_x;
    uint width = inputDimensions.x;
    uint height = inputDimensions.y;
@@ -35,8 +35,10 @@ __global__ void Convolution(f32 *input,
    uint rad_y = maskHeight/2;
 
    // Transfer to shared memory
-   if (hipThreadIdx_x < maskDimensions.x*maskDimensions.y) {
-     buf[hipThreadIdx_x] = psf[hipThreadIdx_x];
+   for (int m=0; m*hipBlockDim_x < maskWidth*maskHeight; m++) {
+     if ( m*hipBlockDim_x + hipThreadIdx_x < maskWidth*maskHeight) {
+       buf[m*hipBlockDim_x+hipThreadIdx_x] = psf[m*hipBlockDim_x+hipThreadIdx_x];
+     }
    }
    __syncthreads();
    
@@ -73,6 +75,7 @@ __global__ void Convolution(f32 *input,
 	  uint index = chan*height*width + (y + m - rad_y) * imWidth + (x + n - rad_x);
             
 	  sum += input[index] * buf[maskIndex];
+	  //sum += input[index] * psf[maskIndex];
 	 }
    }
    output[tid] = sum + epsilon;
@@ -143,8 +146,9 @@ int callConvolution(f32 *gIn, f32 *gMask, f32 *gOut, uint channelbatch, uint hei
   hipLaunchKernelGGL(Convolution,
 		     dim3(globalThreads/localThreads),
                     dim3(localThreads),
-                    filt_width*filt_height, 0,
+		     filt_width*filt_height*sizeof(f32), 0,
 		     gIn, gMask, gOut, input_dim, mask_dim, width, epsilon);
+  hipDeviceSynchronize();
 
   return 1;
 }
@@ -159,6 +163,7 @@ int callDivision(f32 *num, f32 *den, uint size) {
                     dim3(localThreads),
                     0, 0,
 		      num, den, size);
+   hipDeviceSynchronize();
    return 1;
 }
 
@@ -173,6 +178,7 @@ int callFiltDivision(f32 *num, f32 *den, f32 thresh, uint size) {
 		      dim3(localThreads),
 		      0, 0,
 		      num, den, thresh, size);
+   hipDeviceSynchronize();
    return 1;
 }
 
@@ -186,6 +192,7 @@ int callMult(f32 *a, f32 *b, uint size) {
 		      dim3(localThreads),
 		      0, 0,
 		      a, b, size);
+   hipDeviceSynchronize();
    return 1;
 }
 
@@ -199,6 +206,7 @@ int callClip(f32 *a, f32 lower, f32 upper, uint size) {
 		      dim3(localThreads),
 		      0, 0,
 		      a, lower, upper, size);
+   hipDeviceSynchronize();
    return 1;
 }
 
@@ -263,3 +271,4 @@ int copyBuffers(f32 *dest, f32 *src, size_t n) {
   hipMemcpy(dest, src, n, hipMemcpyDeviceToDevice);
   return 1;
 }
+

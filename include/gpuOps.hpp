@@ -30,6 +30,7 @@ int callClip(f32 *a, f32 lower, f32 upper, uint size);
 int setupHip(ImageData *im_data, GpuData *gData, uint channelbatch);
 int cleanupHip(GpuData *gData);
 int transferResult(ImageData *imData, GpuData *gData);
+int transferResult(f32 *output, GpuData *gData, size_t n);
 int copyBuffers(f32 *a, f32 *b, size_t n);
 int resetDeconv(f32 *a, f32 val, uint size);
 #endif

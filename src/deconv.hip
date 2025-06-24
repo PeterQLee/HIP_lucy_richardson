@@ -2,7 +2,7 @@
 #include <hip/hip_runtime.h>
 #include <time.h>
 #define DEBUG_RUNTIME 0
-void lucy_richardson(ImageData *imData, int num_iter, f32 epsilon , bool clip, bool flag_denom_filter, f32 denom_filter, uint channelbatch) {
+void lucy_richardson(ImageData *imData, int num_iter, f32 epsilon , bool clip, bool flag_denom_filter, f32 denom_filter, uint channelbatch, f32 *output) {
 
   GpuData gdata;
   #if DEBUG_RUNTIME
@@ -79,7 +79,14 @@ void lucy_richardson(ImageData *imData, int num_iter, f32 epsilon , bool clip, b
     before = clock();
   #endif
 
-  transferResult(imData, &gdata);
+  // output assumed as the input buffer.
+  if (output == NULL) {
+    transferResult(imData, &gdata);
+  }
+  // Transfer data to specific output buffer
+  else {
+    transferResult(output, &gdata, cb*width*height);
+  }
   
   #if DEBUG_RUNTIME
   difference = clock() - before;

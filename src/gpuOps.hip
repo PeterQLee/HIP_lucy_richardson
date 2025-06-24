@@ -267,6 +267,11 @@ int transferResult(ImageData *imData, GpuData *gData) {
   return 1;
 }
 
+int transferResult(f32 *output, GpuData *gData, size_t n) {
+  hipMemcpy(output, gData->g_image, n*sizeof(float), hipMemcpyDeviceToHost);
+  return 1;
+}
+
 int copyBuffers(f32 *dest, f32 *src, size_t n) {
   hipMemcpy(dest, src, n, hipMemcpyDeviceToDevice);
   return 1;

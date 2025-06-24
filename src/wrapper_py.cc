@@ -3,9 +3,9 @@
 #include <pybind11/numpy.h>
 
 namespace py = pybind11;
-
-void run_LR_deconv(py::array_t<float, py::array::c_style> image,
-		   py::array_t<float, py::array::c_style> psf,
+ 
+py::array_t<float, py::array::c_style> run_LR_deconv(py::array_t<float, py::array::c_style | py::array::forcecast> image,
+		   py::array_t<float, py::array::c_style | py::array::forcecast> psf,
 		   int num_iter,
 		   bool clip = true,
 		   py::object filter_epsilon = py::none(),
@@ -78,9 +78,16 @@ void run_LR_deconv(py::array_t<float, py::array::c_style> image,
     denom_filter = py::cast<float>(filter_epsilon);
     
   }
-  lucy_richardson(&imdata, num_iter, eps, clip, flag_denom_filter, denom_filter, channelbatch);
+
+  //Allocate output buffer.
+  py::array_t<float, py::array::c_style> output = py::array_t<float>(image.size);
+  
+  lucy_richardson(&imdata, num_iter, eps, clip, flag_denom_filter, denom_filter, channelbatch, (f32*) output.data(0));
 
   free(imdata.flipPsfData);
+  
+  // TODO: check ownership rules.
+  return output;
 }
 
 
@@ -110,7 +117,8 @@ channelbatch: number of channels to concurrently process.
 ---------------
 The result of the deconvolution is returned by overwriting the data in image.
 
-)pbdoc", py::arg("image"), py::arg("psf"), py::arg("num_iter"), py::arg("clip") = true, py::arg("filter_epsilon") = py::none(), py::arg("channelbatch")=1);
+)pbdoc", py::arg("image"), py::arg("psf"), py::arg("num_iter"), py::arg("clip") = true, py::arg("filter_epsilon") = py::none(), py::arg("channelbatch")=1,
+	   py::return_value_policy::take_ownership);
 
     m.attr("__version__") = "0.1";
 

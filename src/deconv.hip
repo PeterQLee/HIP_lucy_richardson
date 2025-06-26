@@ -85,7 +85,7 @@ void lucy_richardson(ImageData *imData, int num_iter, f32 epsilon , bool clip, b
   }
   // Transfer data to specific output buffer
   else {
-    transferResult(output, &gdata, cb*width*height);
+    transferResult(output, &gdata, channels*width*height);
   }
   
   #if DEBUG_RUNTIME

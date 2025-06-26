@@ -28,9 +28,9 @@ py::array_t<float, py::array::c_style> run_LR_deconv(py::array_t<float, py::arra
   }
 
   else {
-    printf("Error: Image required to have 2 or 3 dimensions\n");
-    return;
+    throw std::invalid_argument("Error: Image required to have 2 or 3 dimensions\n");
   }
+  
 
   ssize_t psfdim = psf.ndim();
   size_t psfheight, psfwidth;
@@ -39,18 +39,15 @@ py::array_t<float, py::array::c_style> run_LR_deconv(py::array_t<float, py::arra
     psfwidth = psf.shape(1);
   }
   else {
-    printf("Error: PSF required to have 2 dimensions\n");
-    return;
+    throw std::invalid_argument("Error: PSF required to have 2 dimensions\n");
   }
 
   if (psfheight %2 ==0 || psfwidth%2==0) {
-    printf("Error: PSF dimensions must be odd\n");
-    return;
+    throw std::invalid_argument("Error: PSF dimensions must be odd\n");
   }
 
   if (psfheight > height || psfwidth > width) {
-    printf("Error: PSF dimension is larger than the input image\n");
-    return;
+    throw std::invalid_argument("Error: PSF dimension is larger than the input image\n");
   }
   
   // Allocate buffers
@@ -80,7 +77,7 @@ py::array_t<float, py::array::c_style> run_LR_deconv(py::array_t<float, py::arra
   }
 
   //Allocate output buffer.
-  py::array_t<float, py::array::c_style> output = py::array_t<float>(image.size);
+  py::array_t<float, py::array::c_style> output = py::array_t<float>({channels, height, width});
   
   lucy_richardson(&imdata, num_iter, eps, clip, flag_denom_filter, denom_filter, channelbatch, (f32*) output.data(0));
 

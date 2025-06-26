@@ -112,8 +112,8 @@ filter_epsilon: Value below which intermediate results become 0 to avoid divisio
 channelbatch: number of channels to concurrently process.
 
 ---------------
-The result of the deconvolution is returned by overwriting the data in image.
 
+Returns: result ndarray with shape [channel, height, width]
 )pbdoc", py::arg("image"), py::arg("psf"), py::arg("num_iter"), py::arg("clip") = true, py::arg("filter_epsilon") = py::none(), py::arg("channelbatch")=1,
 	   py::return_value_policy::take_ownership);
 

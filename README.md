@@ -37,7 +37,7 @@ typedef struct {
   
 } ImageData;
 
-void lucy_richardson(ImageData *imData, int num_iter, f32 epsilon , bool clip = true, bool flag_denom_filter = false, f32 denom_filter = 0.0, uint channelbatch = 1);
+void lucy_richardson(ImageData *imData, int num_iter, f32 epsilon , bool clip = true, bool flag_denom_filter = false, f32 denom_filter = 0.0, uint channelbatch = 1, f32 *output);
 ```
 
 ## Python interface
@@ -58,7 +58,7 @@ LR_GPU_wrapper.run_LR_deconv(image, psf, num_iter, clip=True, filter_epsilon=Non
 
 ---------------
   
-  The result of the deconvolution is returned by overwriting the data in image.
+  Returns: result ndarray with shape [channel, height, width]
 
 ```
 
@@ -70,5 +70,5 @@ import numpy as np
 channel, height, width = (3,50,50)
 image = np.ones((channel,height,width), dtype=np.float32)
 psf = np.ones((1,3), dtype=np.float32)/3
-LR_GPU_wrapper.run_LR_deconv(image, psf, 10)
+result = LR_GPU_wrapper.run_LR_deconv(image, psf, 10)
 ```

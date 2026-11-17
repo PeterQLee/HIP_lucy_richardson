@@ -1,0 +1,83 @@
+name: HIP on simulated MI300X
+
+# The hosted runners have no GPU. This builds the library and runs tests/test.cc
+# on a simulated AMD MI300X (https://github.com/pantheongpu/pantheonsim). A
+# simulator cannot reproduce hardware-specific behavior or timing, so it
+# complements real-GPU testing and does not replace it.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/**"
+      - "include/**"
+      - "tests/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/gpu-sim.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: HIP ROCm 7.1 and simulated MI300X
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+
+    - name: Set up the simulated GPU and ROCm
+      uses: pantheongpu/setup-pantheonsim@deff5781e8adfd83dec98dd5242dcbc96a564773 # v0.1.10
+      with:
+        gpu: amd/mi300x
+        cuda-toolkit: none
+        rocm: "7.1"
+
+    # find_package(hip) needs the amd_comgr CMake config and the HSA runtime,
+    # which the compiler-only ROCm install of the action does not include.
+    # CMakeLists.txt always configures the pybind11 module, so it is needed too.
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get -y install
+        comgr
+        hsa-rocr
+        pybind11-dev
+        python3-dev
+
+    # The explicit architecture (gfx942 is the MI300X) keeps CMake from probing
+    # for a GPU. Only the library and the test program are built.
+    - name: Configure
+      run: cmake
+        -DCMAKE_HIP_COMPILER=/opt/rocm/lib/llvm/bin/clang++
+        -DCMAKE_HIP_ARCHITECTURES=gfx942
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_PREFIX_PATH=/opt/rocm
+        -S .
+        -B build
+
+    - name: Build
+      run: cmake --build build --target test -- -j 3
+
+    # tests/test.cc deconvolves rgbimg.bin and only prints "Not the same" when
+    # the result differs from the bundled rgbrestored.bin (tolerance 1e-5), so
+    # the job checks the output instead of the exit code. It must also fail if
+    # the simulator reports an error or no device was used.
+    - name: Run test
+      working-directory: build
+      run: |
+        set -o pipefail
+        vgpu run ./test 2>&1 | tee test.log
+        if grep -Eiq 'VirtualGPU error|no (hip-capable )?device|hip error|Not the same' test.log; then
+          echo "::error::test failed or the GPU path did not run"
+          exit 1
+        fi
+        # three reads of 506463, 506463 and 29 floats, then the final summary
+        grep -q '^ret=506463$' test.log
+        grep -q '^ret=29$' test.log
+        grep -q 'MAx ' test.log
